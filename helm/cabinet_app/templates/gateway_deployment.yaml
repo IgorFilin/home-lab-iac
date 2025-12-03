@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.gateway.deployment_name }}
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      {{ toYamlPretty .Values.front.label }}
+  
+  template:
+    metadata:
+      labels:
+        {{ toYamlPretty .Values.front.label }}
+    spec:
+      containers:
+        - name: gateway
+          {{- with .Values.gateway.image }}
+          image: "{{ .repository }}:{{ .version }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.gateway.imagePullPolicy }}
+          env:
+            {{- range .Values.gateway.envs }}
+              {{- $data := dict "name" .Values.backend_secret.name "env" .  }}
+              {{-  include "env.template" $data | indent 12 }}
+            {{- end }}
+          resources:
+            limits:
+              {{ .Values.gateway.limits }}
+            requests:
+              {{ .Values.gateway.requests }}
+          ports:
+          - containerPort: {{ .Values.gateway.container_port }}
+      imagePullSecrets:
+        - name: {{ .Values.docker_login_secret.name }}

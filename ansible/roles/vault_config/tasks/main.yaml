@@ -1,0 +1,118 @@
+- name: Скачивание сертификата с k3s
+  fetch:
+    src: /var/lib/rancher/k3s/server/tls/server-ca.crt
+    dest: /tmp/k3s-ca.crt
+    flat: yes
+  delegate_to: k3s
+  run_once: true
+
+- name: Включить аутентификацию через kubernetes
+  uri:
+    url: "{{ vault_api_url }}/v1/sys/auth/kubernetes"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    status_code: 
+      - 200 
+      - 204
+      - 400
+    body:
+      type: "kubernetes"
+      description: "Kubernetes auth method"
+  register: kuber_auth_data
+  run_once: true
+
+- name: Вывести статус
+  debug:
+    msg: "HTTP-статус ответа от k3s: {{ kuber_auth_data.status }}"
+
+- name: Ошибка если vault не запущен
+  fail:
+    msg: "Возможно аутентификация в k3s не настроена, либо уже существует, проверьте это"
+  when: kuber_auth_data.status == 400
+
+- name: Сохранение токена для дальшейней работы
+  copy: 
+    content: "{{ lookup('env', 'VAULT_ROOT_TOKEN')  }}"
+    dest: ~/.vault-token
+    mode: '0600'
+    owner: root
+    group: root
+
+- name: Настроить конфиг аутентификации kubernetes
+  uri:
+    url: "{{ vault_api_url }}/v1/auth/kubernetes/config"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    status_code: 200, 204
+    body:
+      kubernetes_host: "{{ k3s_api_endpoint  }}"
+      kubernetes_ca_cert: "{{ lookup('file', '/tmp/k3s-ca.crt') }}"  
+  run_once: true
+
+- name: Создание политики для ESO
+  uri:
+    url: "{{ vault_api_url }}/v1/sys/policy/eso-policy"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    status_code: 200, 204
+    body:
+      policy: |
+        path "kv/data/*" { 
+          capabilities = ["read"] 
+        }
+  run_once: true
+
+- name: Создание роли для аутентификации в kubernetes
+  uri:
+    url: "{{ vault_api_url }}/v1/auth/kubernetes/role/external-secrets"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    status_code: 200, 204
+    body:
+      bound_service_account_names: "external-secrets"
+      bound_service_account_namespaces: "external-secrets"
+      policies: ["eso-policy"]
+  run_once: true
+
+- name: Смонтировать KV v2 на путь kv
+  uri:
+    url: "{{ vault_api_url }}/v1/sys/mounts/kv"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    body:
+      type: kv
+      options:
+        version: "2"
+      description: "KV v2 for External Secrets"
+    status_code: 204
+  run_once: true
+  
+- name: Создание секрета 
+  uri:
+    url: "{{ vault_api_url }}/v1/kv/data/external-secrets"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
+    body_format: json
+    body:
+      data:
+        JWT_SECRET: ""
+        BD_PORT: ""
+        BD_HOST: ""
+        BD_PASSWORD: ""
+        BD_USERNAME: ""
+        BD_DATABASE: ""
+        SECRET_REGISTER_KEY: ""
+        EMAIL_USERNAME: ""
+        EMAIL_PASSWORD: ""
+  run_once: true

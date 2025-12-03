@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.front.deployment_name }}
+spec:
+  replicas: {{ .Values.front.replicas }}
+  selector:
+    matchLabels:
+      {{ toYamlPretty .Values.front.label }}
+
+  template:
+    metadata:
+      labels:
+        {{ toYamlPretty .Values.front.label }}
+    spec:
+      serviceAccountName: backend
+      containers:
+        - name: frontend
+          {{- with .Values.front.image }}
+          image: "{{ .repository }}:{{ .version }}"
+          {{- end }}
+          resources:
+            limits:
+              {{- toYaml .Values.frontend.limits | nindent 14 }}
+            requests:
+              {{- toYaml .Values.frontend.requests | nindent 14 }}
+          ports:
+            - containerPort:  {{ .Values.front.container_port }}

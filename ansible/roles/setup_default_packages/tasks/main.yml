@@ -1,0 +1,18 @@
+- name: Обновляем пакеты
+  apt:
+    update_cache: yes
+
+- name: Установка curl
+  apt:
+    name: curl
+    state: present
+
+- name: Установка unzip
+  apt:
+    name: unzip
+    state: present
+
+- name: Установка python
+  apt:
+    name: python3-pip
+    state: present

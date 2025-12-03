@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.gateway.cluster_name }}
+spec:
+  type: ClusterIP
+  selector:
+    {{ toYamlPretty .Values.gateway.label }}
+  ports:
+  - port: {{ .Values.gateway.cluster_port }}
+    targetPort: {{ .Values.gateway.container_port }}

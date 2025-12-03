@@ -1,0 +1,66 @@
+- name: Проверка на существование скаченного бинарника helm
+  stat:
+    path: /tmp/get_helm.sh
+  register: helm_binary_file
+
+- name: Установить Python-зависимости для kubernetes.core
+  pip:
+    name:
+      - kubernetes>=24.2.0
+      - PyYAML>=3.11
+      - jsonpatch
+    state: present
+    executable: pip3
+
+- name: Скачивание helm
+  uri:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+    dest: /tmp/get_helm.sh
+    mode: 0777
+  when: not helm_binary_file.stat.exists
+
+- name: Установка helm
+  command: bash /tmp/get_helm.sh
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Сохранить автодополнение helm в файл
+  shell: helm completion bash > /etc/bash_completion.d/helm
+  args:
+    creates: "/etc/bash_completion.d/helm"
+
+- name: Добавление Helm-репозиторий external-secrets
+  command: helm repo add external-secrets https://charts.external-secrets.io
+  args:
+    creates: "{{ ansible_env.HOME }}/.cache/helm/repository/external-secrets-index.yaml.j2"
+  register: external_secrets_result
+
+- name: Установка чарта external-secrets из репозитория
+  command: |
+    helm upgrade --install external-secrets \
+     external-secrets/external-secrets \
+    -n external-secrets \
+    --create-namespace \
+    --set installCRDs=true
+
+- name: Создать ServiceAccount для ESO
+  kubernetes.core.k8s:
+    template: "eso_sa.yaml.j2"
+    namespace: external-secrets
+
+- name: Создать ClusterRole для tokenreview
+  kubernetes.core.k8s:
+    template: "eso_cluster_role.yaml.j2"
+
+- name: Создать ClusterRoleBinding
+  kubernetes.core.k8s:
+    template: "eso_cluster_role_binding.yaml.j2"
+
+- name: Создать ClusterSecretStore
+  kubernetes.core.k8s:
+    template: "external_secret_store.yaml.j2"
+
+- name: Создать ExternalSecret
+  kubernetes.core.k8s:
+    template: "eso_ext_secret.yaml.j2"
+    namespace: default

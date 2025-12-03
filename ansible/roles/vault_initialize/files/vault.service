@@ -1,0 +1,22 @@
+[Unit]
+Description=Vault
+Documentation=https://www.vaultproject.io/docs/
+After=network-online.target
+Wants=network-online.target
+ConditionFileNotEmpty=/etc/vault/config.hcl
+
+[Service]
+User=vault
+Group=vault
+ExecStart=/usr/local/bin/vault server -config=/etc/vault/config.hcl
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+AmbientCapabilities=CAP_IPC_LOCK
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target

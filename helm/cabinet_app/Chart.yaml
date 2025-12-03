@@ -1,0 +1,6 @@
+apiVersion: v2
+name: cabinet_app
+description: Чарт приложения персональный кабинет
+type: application
+version: 0.1.0
+appVersion: "1.0"

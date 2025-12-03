@@ -1,0 +1,44 @@
+front:
+  deployment_name: frontend-deployment
+  cluster_name: frontend-cluster-ip
+  label:
+    service: frontend
+  replicas: 1
+  image:
+    repository: igorfilin/frontend
+    version: v1.0
+  limits:
+    memory: "256Mi"
+    cpu: "100m"
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  container_port: 8081
+  cluster_port: 80
+
+gateway:
+  deployment_name: gateway-deployment
+  cluster_name: gateway-cluster-ip
+  replicas: 1
+  image:
+    repository: igorfilin/gateway-micro-service
+    version: v1.2
+  imagePullPolicy: Always
+  label:
+    service: gateway
+  limits:
+    memory: "256Mi"
+    cpu: "100m"
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  container_port: 3000
+  cluster_port: 3000
+  envs:
+    - JWT_SECRET
+
+backend_secret:
+  name: k3s-external-secret
+
+docker_login_secret:
+  name: docker-login-secret

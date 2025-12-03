@@ -1,0 +1,8 @@
+- name: Настройка k3s для синхронизации с vault
+  hosts: all
+
+  roles:
+    - role: setup_default_packages
+    - role: install_eso_kuber
+      vars:
+        kubeconfig: /etc/rancher/k3s/k3s.yaml

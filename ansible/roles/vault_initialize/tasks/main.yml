@@ -1,0 +1,100 @@
+- name: Скачиваем vault нужной версии
+  get_url: 
+    url: "{{ download_data.domain }}/{{ download_data.version_vault }}"
+    dest: /tmp/vault.zip
+    force: no
+
+- name: Распаковываем vault нужной версии
+  unarchive:
+    src: /tmp/vault.zip
+    dest: /usr/local/bin
+    remote_src: yes
+    creates: /usr/local/bin/vault
+
+- name: Создаем группу vault
+  group:
+    name: vault
+    system: true
+    state: present
+
+- name: Создаем нужного пользователя
+  user:
+    name: vault
+    create_home: false
+    system: true
+    group: vault
+    comment: Служебный пользователь vault
+
+- name: Создание нужных директорий
+  file:
+    path: "{{ item }}"
+    state: directory   
+    owner: vault
+    group: vault
+    mode: 0755
+  loop: "{{ directory_configs }}"
+
+- name: Копируем конфиг
+  copy:
+    src: config.hcl
+    dest: /etc/vault/config.hcl
+    mode: 0755
+    owner: root
+    group: root
+
+- name: Добавляем переменную адреса для корректной работы CLI
+  copy:
+    content: |
+      # Ansible-host added by env
+      export VAULT_ADDR="{{ adress_connect }}"
+    dest: /etc/profile.d/vault.sh
+    mode: '0644'
+    owner: root
+    group: root
+
+- name: Создаём юнит сервиса vault
+  copy: 
+    src: vault.service
+    dest: /etc/systemd/system/vault.service
+    mode: 0644
+    owner: root
+    group: root
+  notify: daemon_reload
+
+- name: Запускаем юнит vault
+  systemd_service:
+    name: vault
+    enabled: yes
+    state: started
+
+- name: Проверка запуска vault
+  uri:
+    url: "{{ adress_connect }}/v1/sys/health"
+    method: GET
+    status_code: 200, 501, 503
+    timeout: 10
+  register: vault_status
+  retries: 5
+  delay: 2
+  until: vault_status is succeeded
+
+- name: Вывести статус
+  debug:
+    msg: "HTTP-статус ответа от Vault: {{ vault_status.status }}"
+
+- name: Ошибка если vault не запущен
+  fail:
+    msg: "Vault не запустился. Проверьте конфиг и логи."
+  when: vault_status is failed
+  
+- name: Сообщаем о дальнейшей инициализации
+  debug:
+    msg: 
+      - Vault установлен, но НЕ инициализирован.
+      - Далее выполните команды ВРУЧНУЮ на сервере vault
+      -  export VAULT_ADDR="{{ adress_connect }}"
+      -  vault operator init
+      - Сохраните ключи и root token.
+      - Затем распечатайте Vault
+      - vault operator unseal
+      - (введите 3 ключа по очереди)

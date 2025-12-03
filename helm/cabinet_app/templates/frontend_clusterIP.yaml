@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.front.cluster_name }}
+spec:
+  type: ClusterIP
+  selector:
+    {{ toYamlPretty .Values.front.label }}
+  ports:
+  - port: {{ .Values.front.cluster_port }}
+    targetPort: {{ .Values.front.container_port }}

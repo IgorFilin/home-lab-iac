@@ -1,0 +1,8 @@
+ansible_user: igor
+ansible_become: yes
+
+required_config_for_run_k3s_in_host:
+  - 'lxc.apparmor.profile: unconfined'
+  - 'lxc.cgroup.devices.allow: a'
+  - 'lxc.cap.drop:'
+  - 'lxc.mount.auto: proc:rw sys:rw'
