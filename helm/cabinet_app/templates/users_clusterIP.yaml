@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: users-cluster-ip
+  name: {{ .Values.users.cluster_name }}
 spec:
   type: ClusterIP
   selector:
-    service: users
+    {{ toYamlPretty .Values.users.label }}
   ports:
-  - port: 3001
-    targetPort: 3001
+  - port: {{ .Values.users.cluster_port }}
+    targetPort: {{ .Values.users.container_port }}

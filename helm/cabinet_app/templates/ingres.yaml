@@ -1,29 +1,15 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ingress-app
+  name: {{ .Values.ingres.name }}
   labels:
-    app.kubernetes.io/name: myingress
+    {{- toYamlPretty .Values.ingres.label }}
   annotations:
-    # Формат: <namespace>-<middleware-name>@kubernetescrd
-    traefik.ingress.kubernetes.io/router.middlewares: default-replacepathregex@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: "default-{{ .Values.middlewares.replacepath.name }}@kubernetescrd"
 spec:
   rules:
-  - host: training-program.ru
+  - host: {{ .Values.ingres.host }}
     http:
-      paths:
-      - pathType: ImplementationSpecific
-        path: "/api/"
-        backend:
-          service:
-            name: gateway-cluster-ip
-            port: 
-              number: 3000
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: frontend-cluster-ip
-            port: 
-              number: 80
-
+      {{- range .Values.ingres.paths   }}
+        {{- include "path.template" . | indent 8}}
+      {{- end }}

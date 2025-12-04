@@ -1,74 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: knowledge-deployment
+  name: {{ .Values.knowledge.deployment_name }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.knowledge.replicas }}
   selector:
     matchLabels:
-      service: knowledge
+      {{ toYamlPretty .Values.front.label }}
   
   template:
     metadata:
       labels:
-        service: knowledge
+        {{ toYamlPretty .Values.front.label }}
     spec:
       containers:
         - name: knowledge
-          image: igorfilin/knowledge-micro-service:v1.0
-          imagePullPolicy: Always
+          {{- with .Values.knowledge.image }}
+          image: "{{ .repository }}:{{ .version }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.knowledge.imagePullPolicy }}
           env:
-            - name: 'JWT_SECRET'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: JWT_SECRET
-            - name: 'BD_PORT'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: BD_PORT
-            - name: 'BD_HOST'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: BD_HOST
-            - name: 'BD_PASSWORD'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: BD_PASSWORD
-            - name: 'BD_USERNAME'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: BD_USERNAME
-            - name: 'BD_DATABASE'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: BD_DATABASE
-            - name: 'SECRET_REGISTER_KEY'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: SECRET_REGISTER_KEY
-            - name: 'EMAIL_USERNAME'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: EMAIL_USERNAME
-            - name: 'EMAIL_PASSWORD'
-              valueFrom:
-                secretKeyRef:
-                  name: k3s-external-secret
-                  key: EMAIL_PASSWORD
+            {{- range .Values.knowledge.envs }}
+              {{- $data := dict "name" .Values.backend_secret.name "env" .  }}
+              {{-  include "env.template" $data | indent 12 }}
+            {{- end }}
           resources:
             limits:
-              memory: "256Mi"
-              cpu: "500m"
+              {{ .Values.knowledge.limits }}
             requests:
-              memory: "128Mi"
-              cpu: "200m"
+              {{ .Values.knowledge.requests }}
       imagePullSecrets:
-        - name: docker-login-secret
+        - name: {{ .Values.docker_login_secret.name }}

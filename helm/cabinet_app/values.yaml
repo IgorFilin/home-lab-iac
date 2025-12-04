@@ -37,8 +37,89 @@ gateway:
   envs:
     - JWT_SECRET
 
+users:
+  deployment_name: users-deployment 
+  cluster_name: users-cluster-ip
+  replicas: 1
+  image:
+    repository: igorfilin/user-micro-service
+    version: v1.0
+  imagePullPolicy: Always
+  label:
+    service: users 
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
+  requests:
+    memory: "128Mi"
+    cpu: "200m"
+  container_port: 3001
+  cluster_port: 3001
+  envs:
+    - JWT_SECRET
+    - BD_PORT
+    - BD_HOST
+    - BD_PASSWORD
+    - BD_USERNAME
+    - BD_DATABASE
+    - SECRET_REGISTER_KEY
+    - EMAIL_USERNAME
+    - EMAIL_PASSWORD
+
+knowledge:
+  deployment_name: knowledge-deployment
+  replicas: 1
+  image:
+    repository: igorfilin/knowledge-micro-service
+    version: v1.0
+  imagePullPolicy: Always
+  label:
+    service: knowledge 
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
+  requests:
+    memory: "128Mi"
+    cpu: "200m"
+  envs:
+    - JWT_SECRET
+    - BD_PORT
+    - BD_HOST
+    - BD_PASSWORD
+    - BD_USERNAME
+    - BD_DATABASE
+    - SECRET_REGISTER_KEY
+    - EMAIL_USERNAME
+    - EMAIL_PASSWORD
+
+ingres:
+  name: ingress-app
+  label:
+    app.kubernetes.io/name: myingress
+  host: training-program.ru
+  paths:
+    - pathType: ImplementationSpecific
+      path: "/api/"
+      service_name: gateway-cluster-ip
+      service_port: 3000
+    - pathType: Prefix
+      path: "/"
+      service_name: frontend-cluster-ip
+      service_port: 80
+
+middlewares:
+  replacepath:
+    name: replacepathregex
+    namespace: default
+    regex: "^/api/(.*)"
+    replacement: "/$1"
+
 backend_secret:
   name: k3s-external-secret
 
 docker_login_secret:
   name: docker-login-secret
+
+service_account:
+  name: backend
+  namespace: default

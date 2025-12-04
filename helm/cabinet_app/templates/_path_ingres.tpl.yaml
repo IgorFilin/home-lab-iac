@@ -1,0 +1,9 @@
+{{- define "path.template" }}
+- pathType: {{ .pathType }}
+  path: {{ .path }}
+  backend:
+    service:
+      name: {{ .service_name }}
+      port: 
+        number: {{ .service_port }}
+{{- end }}
