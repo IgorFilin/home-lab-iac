@@ -6,3 +6,5 @@ required_config_for_run_k3s_in_host:
   - 'lxc.cgroup.devices.allow: a'
   - 'lxc.cap.drop:'
   - 'lxc.mount.auto: proc:rw sys:rw'
+
+vault_api_url: http://192.168.0.119:8201
