@@ -1,0 +1,51 @@
+- name: Проверка есть ли 
+  stat:
+    path: /usr/local/bin/gitlab-runner
+  register: gitlab_runner
+  
+- name: Установка раннера
+  get_url:
+    url: https://s3.dualstack.us-east-1.amazonaws.com/gitlab-runner-downloads/latest/binaries/gitlab-runner-linux-amd64
+    dest: /usr/local/bin/gitlab-runner
+    mode: "0755"
+  when: not gitlab_runner.stat.exists
+
+- name: Создание группы
+  group:
+    name: gitlab-runner
+    system: true
+    state: present
+
+- name: Создаем нужного пользователя
+  user:
+    name: gitlab-runner
+    create_home: true
+    system: false
+    group: gitlab-runner
+    comment: 'GitLab Runner'
+
+- name: Собираем информацию о запущенных сервисах
+  ansible.builtin.service_facts:
+
+- name: Установка как системную службу
+  command: |
+    gitlab-runner install 
+      --user=gitlab-runner 
+      --working-directory=/home/gitlab-runner
+  when: "'gitlab-runner.service' not in ansible_facts.services"
+
+- name: Зарегистрировать раннер
+  command: |
+    gitlab-runner register \
+      --non-interactive \
+      --url "https://gitlab.com/" \
+      --token "{{ token_env }}" \
+      --executor "docker" \
+      --docker-image "alpine:latest"
+  when: "'gitlab-runner.service' not in ansible_facts.services"
+
+- name: Запуск
+  systemd:
+    name: gitlab-runner
+    state: started
+    enabled: yes

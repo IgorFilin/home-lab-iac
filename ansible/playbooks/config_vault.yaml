@@ -1,10 +1,10 @@
+---
 - name: Настройка vault
-  hosts: all
+  hosts: vault
 
-  roles: 
+  roles:
     - setup_default_packages
     - vault_config
-
 
 # playbook должен быть запущен после установки k3s
 # Необходима переменная VAULT_ROOT_TOKEN как env при запуске playbook

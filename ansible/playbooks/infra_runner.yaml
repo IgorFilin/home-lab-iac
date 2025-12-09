@@ -1,0 +1,7 @@
+- name: Настройка и конфигурация средства выполнения CICD с тегом infra
+  hosts: runners:infra_runner
+
+  roles:
+    - setup_default_packages
+    - install_docker
+    - config_gitlab_runner

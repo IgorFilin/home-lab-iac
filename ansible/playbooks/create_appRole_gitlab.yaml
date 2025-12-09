@@ -1,5 +1,6 @@
+---
 - name: Установка appRole для git-lab-ci
-  hosts: all
+  hosts: vault
 
-  roles: 
+  roles:
     - vault_gitlab_approle

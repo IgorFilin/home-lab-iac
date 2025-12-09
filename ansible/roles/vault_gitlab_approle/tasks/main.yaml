@@ -1,12 +1,13 @@
+---
 - name: Включить аутентификацию через appRole
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/sys/auth/approle"
     method: POST
     headers:
       X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
     body_format: json
-    status_code: 
-      - 200 
+    status_code:
+      - 200
       - 204
       - 400
     body:
@@ -15,15 +16,14 @@
   register: kuber_auth_data
   run_once: true
 
-
 - name: Создание auth метода по appRole
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/auth/approle/role/gitLab-ci"
     method: POST
     headers:
       X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
     body_format: json
-    status_code: 
+    status_code:
       - 200
       - 204
       - 400
@@ -37,22 +37,21 @@
   run_once: true
 
 - name: Инструкция по завершению настройки
-  debug:
+  ansible.builtin.debug:
     msg: |
       AppRole 'gitlab-ci' успешно создан.
-      
+
       Далее выполните ВРУЧНУЮ на сервере Vault:
-      
+
         1. Получите role_id:
              vault read auth/approle/role/gitlab-ci/role-id
-        
+
         2. Создайте secret_id (храните его в секрете!):
              vault write -f auth/approle/role/gitlab-ci/secret-id
-        
+
         3. Скопируйте значения в GitLab CI Variables:
              VAULT_ROLE_ID   = <значение из шага 1>
              VAULT_SECRET_ID = <значение из шага 2>  ← masked!
-      
+
       После этого CI сможет получать секреты из Vault.
   run_once: true
-  

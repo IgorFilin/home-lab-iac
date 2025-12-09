@@ -1,0 +1,5 @@
+---
+- import_playbook: config_k3s_for_vault.yaml
+- import_playbook: install_k3s.yaml
+- import_playbook: install_vault.yaml
+- import_playbook: update-dns-conf.yaml

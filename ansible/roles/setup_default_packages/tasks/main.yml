@@ -1,18 +1,20 @@
+---
 - name: Обновляем пакеты
-  apt:
-    update_cache: yes
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
 
 - name: Установка curl
-  apt:
+  ansible.builtin.apt:
     name: curl
     state: present
 
 - name: Установка unzip
-  apt:
+  ansible.builtin.apt:
     name: unzip
     state: present
 
 - name: Установка python
-  apt:
+  ansible.builtin.apt:
     name: python3-pip
     state: present

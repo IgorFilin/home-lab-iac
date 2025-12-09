@@ -1,0 +1,14 @@
+---
+# Для работа необходиме переменная -e k3s_container_id=<Номер контейнера k3s>
+
+- name: Установка k3s в систему
+  hosts: k3s
+
+  roles:
+    - setup_default_packages
+    - role: create_ln_s
+      vars:
+        links: "{{ mount_ln }}"
+    - role: install_k3s
+      vars:
+        k3s_container: "{{ k3s_container_id }}"

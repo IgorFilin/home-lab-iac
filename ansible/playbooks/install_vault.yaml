@@ -1,6 +1,7 @@
+---
 - name: Установка vault
-  hosts: all
+  hosts: vault
 
-  roles: 
+  roles:
     - setup_default_packages
     - vault_initialize

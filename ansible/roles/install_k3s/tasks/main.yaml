@@ -1,0 +1,113 @@
+---
+- name: Проверяем, что переменная контейнера k3s передана
+  ansible.builtin.assert:
+    that:
+      - k3s_container is defined
+    fail_msg: "Пожалуйста укажите переменную текущего хоста k3s"
+
+- name: Проверка что контейнер готов к установке
+  ansible.builtin.command: grep -q "{{ item }}" /etc/pve/lxc/{{ k3s_container }}.conf
+  delegate_to: main_host_proxmox
+  loop: "{{ required_config_for_run_k3s_in_host }}"
+  ignore_errors: true
+  check_mode: false
+  register: status_host_availability
+
+- name: Проверяем, что все настройки найдены
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+    fail_msg: |
+      "Требуемая настройка {{ item.item }} отсутствует в /etc/pve/lxc/{{ k3s_container }}.conf на хосте {{ hostvars['main_host_proxmox']['ansible_host'] }}"
+      "Добавьте в /etc/pve/lxc/{{ k3s_container }}.conf :"
+        lxc.apparmor.profile: unconfined
+        lxc.cgroup.devices.allow: a
+        lxc.cap.drop:
+        lxc.mount.auto: proc:rw sys:rw
+      После этого желательно перезагрузите {{ k3s_container }} контейнер
+  loop: "{{ status_host_availability.results }}"
+
+- name: Добавляем создание ссылки /dev/kmsg на /dev/console при старте контейнера
+  ansible.builtin.copy:
+    content: "L /dev/kmsg - - - - /dev/console"
+    dest: /etc/tmpfiles.d/kmsg.conf
+    mode: "0600"
+    owner: root
+    group: root
+
+- name: Разрешить все подключения, и включить UFW
+  community.general.ufw:
+    state: enabled
+    policy: allow
+
+- name: Разрешить порты для k3s/Kubernetes
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+    comment: "{{ item.comment }}"
+  loop: "{{ ufw_rules }}"
+
+- name: Перезагружаем UFW
+  community.general.ufw:
+    state: reloaded
+
+- name: Проверка наличия файла
+  ansible.builtin.stat:
+    path: "{{ download_k3s_file_path }}"
+  register: installed_k3s
+
+- name: Скачиваем k3s скрипт для установки
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: "{{ download_k3s_file_path }}"
+    mode: "0700"
+  when: not installed_k3s.stat.exists
+
+- name: Устанавливаем k3s из скрипта установки
+  ansible.builtin.command: sh "{{ download_k3s_file_path }}"
+  args:
+    creates: "{{ installed_k3s_file_path }}"
+
+- name: Убедиться, что служба k3s активна
+  ansible.builtin.systemd_service:
+    name: k3s
+    state: started
+  register: k3s_service
+  until: k3s_service.status.ActiveState == "active"
+  retries: 6
+  delay: 10
+
+- name: Создания катало .kube
+  ansible.builtin.file:
+    path: ~/.kube
+    state: directory
+
+- name: Установка нужных символических ссылок
+  ansible.builtin.import_role:
+    name: create_ln_s
+  vars:
+    links: "{{ kube_config_ln }}"
+
+- name: Проверить наличие директории bash-completion
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.local/share/bash-completion/completions"
+  register: dir_bash_completion
+  delegate_to: k3s
+
+- name: Создать директорию для bash-completion
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.local/share/bash-completion/completions"
+    state: directory
+    mode: "0755"
+  when: not dir_bash_completion.stat.exists
+
+- name: Проверить наличие kubectl автодополнения
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.local/share/bash-completion/completions"
+  register: dir_bash_completion
+
+- name: Сохранить автодополнение kubectl в файл
+  ansible.builtin.shell: kubectl completion bash > "{{ ansible_env.HOME }}/.local/share/bash-completion/completions/kubectl"
+  args:
+    creates: "{{ ansible_env.HOME }}/.local/share/bash-completion/completions/kubectl"

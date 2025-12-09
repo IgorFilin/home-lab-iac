@@ -1,24 +1,31 @@
+---
+- name: Проверка наличие скаченного архива vault
+  ansible.builtin.stat:
+    path: "{{ vault_download_file_path }}"
+  register: download_vault_file
+
 - name: Скачиваем vault нужной версии
-  get_url: 
+  ansible.builtin.get_url:
     url: "{{ download_data.domain }}/{{ download_data.version_vault }}"
-    dest: /tmp/vault.zip
-    force: no
+    dest: "{{ vault_download_file_path }}"
+    force: false
+  when: not download_vault_file.stat.exists
 
 - name: Распаковываем vault нужной версии
-  unarchive:
-    src: /tmp/vault.zip
+  ansible.builtin.unarchive:
+    src: "{{ vault_download_file_path }}"
     dest: /usr/local/bin
-    remote_src: yes
+    remote_src: true
     creates: /usr/local/bin/vault
 
 - name: Создаем группу vault
-  group:
+  ansible.builtin.group:
     name: vault
     system: true
     state: present
 
 - name: Создаем нужного пользователя
-  user:
+  ansible.builtin.user:
     name: vault
     create_home: false
     system: true
@@ -26,49 +33,55 @@
     comment: Служебный пользователь vault
 
 - name: Создание нужных директорий
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
-    state: directory   
+    state: directory
     owner: vault
     group: vault
-    mode: 0755
+    mode: "0755"
   loop: "{{ directory_configs }}"
 
+- name: Проверка наличия конфига
+  ansible.builtin.stat:
+    path: "{{ vault_config_path }}"
+  register: vault_config
+
 - name: Копируем конфиг
-  copy:
+  ansible.builtin.copy:
     src: config.hcl
-    dest: /etc/vault/config.hcl
-    mode: 0755
+    dest: "{{ vault_config_path }}"
+    mode: "0644"
     owner: root
     group: root
+  when: not vault_config.stat.exists
 
 - name: Добавляем переменную адреса для корректной работы CLI
-  copy:
+  ansible.builtin.copy:
     content: |
       # Ansible-host added by env
       export VAULT_ADDR="{{ adress_connect }}"
     dest: /etc/profile.d/vault.sh
-    mode: '0644'
+    mode: "0644"
     owner: root
     group: root
 
 - name: Создаём юнит сервиса vault
-  copy: 
+  ansible.builtin.copy:
     src: vault.service
     dest: /etc/systemd/system/vault.service
-    mode: 0644
+    mode: "0644"
     owner: root
     group: root
   notify: daemon_reload
 
 - name: Запускаем юнит vault
-  systemd_service:
+  ansible.builtin.systemd_service:
     name: vault
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Проверка запуска vault
-  uri:
+  ansible.builtin.uri:
     url: "{{ adress_connect }}/v1/sys/health"
     method: GET
     status_code: 200, 501, 503
@@ -77,24 +90,26 @@
   retries: 5
   delay: 2
   until: vault_status is succeeded
+  check_mode: false
 
 - name: Вывести статус
-  debug:
+  ansible.builtin.debug:
     msg: "HTTP-статус ответа от Vault: {{ vault_status.status }}"
 
 - name: Ошибка если vault не запущен
-  fail:
+  ansible.builtin.debug:
     msg: "Vault не запустился. Проверьте конфиг и логи."
   when: vault_status is failed
-  
+
 - name: Сообщаем о дальнейшей инициализации
-  debug:
-    msg: 
+  ansible.builtin.debug:
+    msg:
       - Vault установлен, но НЕ инициализирован.
       - Далее выполните команды ВРУЧНУЮ на сервере vault
-      -  export VAULT_ADDR="{{ adress_connect }}"
-      -  vault operator init
+      - export VAULT_ADDR="{{ adress_connect }}"
+      - vault operator init
       - Сохраните ключи и root token.
       - Затем распечатайте Vault
       - vault operator unseal
       - (введите 3 ключа по очереди)
+  when: vault_status is succeeded

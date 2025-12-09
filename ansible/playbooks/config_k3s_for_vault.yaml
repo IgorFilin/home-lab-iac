@@ -1,5 +1,6 @@
+---
 - name: Настройка k3s для синхронизации с vault
-  hosts: all
+  hosts: k3s
 
   roles:
     - role: setup_default_packages

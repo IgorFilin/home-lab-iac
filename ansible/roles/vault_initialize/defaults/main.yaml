@@ -1,3 +1,4 @@
+---
 directory_configs:
   - /etc/vault
   - /var/lib/vault
@@ -7,3 +8,6 @@ download_data:
   version_vault: vault_1.21.1_linux_amd64.zip
 
 adress_connect: http://127.0.0.1:8201
+
+vault_download_file_path: /tmp/vault.zip
+vault_config_path: /etc/vault/config.hcl

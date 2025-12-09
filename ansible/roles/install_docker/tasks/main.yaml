@@ -1,0 +1,41 @@
+- name: Установка нужных пакетов
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - software-properties-common
+      - gpg
+
+- name: Установить Python-зависимости для работы с Docker
+  ansible.builtin.pip:
+    name:
+      - docker
+      - requests
+    state: present
+
+- name: Добавление GPG-ключа для работы с репозиторием Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Добавление докер репозиторий в локальный список
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+
+- name: Доп. обновление пакетов
+  apt:
+    update_cache: yes
+
+- name: Установка докера
+  apt:
+    name:
+      - docker-ce 
+      - docker-ce-cli 
+      - containerd.io
+    state: present
+
+- name: Запуск докера
+  service:
+    name: docker
+    state: started

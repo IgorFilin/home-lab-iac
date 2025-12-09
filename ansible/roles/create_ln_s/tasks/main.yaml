@@ -1,5 +1,6 @@
+---
 - name: Проверка на переданные аргументы создания символической ссылки
-  assert:
+  ansible.builtin.assert:
     that:
       - item.src is defined
       - item.dest is defined
@@ -7,9 +8,8 @@
     success_msg: "Создаём ссылку из {{ item.src }} в {{ item.dest }}"
   loop: "{{ links }}"
 
-
 - name: Создание символической ссылки
-  file: 
+  ansible.builtin.file:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     state: link

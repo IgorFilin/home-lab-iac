@@ -1,0 +1,19 @@
+---
+all:
+  children:
+    prod:
+      hosts:
+        k3s:
+          ansible_host: 192.168.0.116
+        vault:
+          ansible_host: 192.168.0.119
+        proxy:
+          ansible_host: 192.168.0.104
+    runners:
+      hosts:
+        infra_runner:
+          ansible_host: 192.168.0.133
+    main:
+      hosts:
+        main_host_proxmox:
+          ansible_host: 192.168.0.110

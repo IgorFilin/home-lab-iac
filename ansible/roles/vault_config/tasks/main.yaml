@@ -1,20 +1,21 @@
+---
 - name: Скачивание сертификата с k3s
-  fetch:
+  ansible.builtin.fetch:
     src: /var/lib/rancher/k3s/server/tls/server-ca.crt
     dest: /tmp/k3s-ca.crt
-    flat: yes
+    flat: true
   delegate_to: k3s
   run_once: true
 
 - name: Включить аутентификацию через kubernetes
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/sys/auth/kubernetes"
     method: POST
     headers:
       X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
     body_format: json
-    status_code: 
-      - 200 
+    status_code:
+      - 200
       - 204
       - 400
     body:
@@ -24,24 +25,24 @@
   run_once: true
 
 - name: Вывести статус
-  debug:
+  ansible.builtin.debug:
     msg: "HTTP-статус ответа от k3s: {{ kuber_auth_data.status }}"
 
 - name: Ошибка если vault не запущен
-  fail:
+  ansible.builtin.fail:
     msg: "Возможно аутентификация в k3s не настроена, либо уже существует, проверьте это"
   when: kuber_auth_data.status == 400
 
 - name: Сохранение токена для дальшейней работы
-  copy: 
-    content: "{{ lookup('env', 'VAULT_ROOT_TOKEN')  }}"
+  ansible.builtin.copy:
+    content: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
     dest: ~/.vault-token
-    mode: '0600'
+    mode: "0600"
     owner: root
     group: root
 
 - name: Настроить конфиг аутентификации kubernetes
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/auth/kubernetes/config"
     method: POST
     headers:
@@ -49,12 +50,12 @@
     body_format: json
     status_code: 200, 204
     body:
-      kubernetes_host: "{{ k3s_api_endpoint  }}"
-      kubernetes_ca_cert: "{{ lookup('file', '/tmp/k3s-ca.crt') }}"  
+      kubernetes_host: "{{ k3s_api_endpoint }}"
+      kubernetes_ca_cert: "{{ lookup('file', '/tmp/k3s-ca.crt') }}"
   run_once: true
 
 - name: Создание политики для ESO
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/sys/policy/eso-policy"
     method: POST
     headers:
@@ -63,13 +64,13 @@
     status_code: 200, 204
     body:
       policy: |
-        path "kv/data/*" { 
-          capabilities = ["read"] 
+        path "kv/data/*" {
+          capabilities = ["read"]
         }
   run_once: true
 
 - name: Создание роли для аутентификации в kubernetes
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/auth/kubernetes/role/external-secrets"
     method: POST
     headers:
@@ -83,7 +84,7 @@
   run_once: true
 
 - name: Смонтировать KV v2 на путь kv
-  uri:
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/sys/mounts/kv"
     method: POST
     headers:
@@ -96,9 +97,9 @@
       description: "KV v2 for External Secrets"
     status_code: 204
   run_once: true
-  
-- name: Создание секрета 
-  uri:
+
+- name: Создание секрета
+  ansible.builtin.uri:
     url: "{{ vault_api_url }}/v1/kv/data/external-secrets"
     method: POST
     headers:

@@ -1,10 +1,11 @@
+---
 - name: Проверка на существование скаченного бинарника helm
-  stat:
+  ansible.builtin.stat:
     path: /tmp/get_helm.sh
   register: helm_binary_file
 
 - name: Установить Python-зависимости для kubernetes.core
-  pip:
+  ansible.builtin.pip:
     name:
       - kubernetes>=24.2.0
       - PyYAML>=3.11
@@ -13,36 +14,35 @@
     executable: pip3
 
 - name: Скачивание helm
-  uri:
+  ansible.builtin.uri:
     url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
     dest: /tmp/get_helm.sh
-    mode: 0777
+    mode: "0777"
   when: not helm_binary_file.stat.exists
 
 - name: Установка helm
-  command: bash /tmp/get_helm.sh
+  ansible.builtin.command: bash /tmp/get_helm.sh
   args:
     creates: /usr/local/bin/helm
 
 - name: Сохранить автодополнение helm в файл
-  shell: helm completion bash > /etc/bash_completion.d/helm
+  ansible.builtin.shell: helm completion bash > /etc/bash_completion.d/helm
   args:
     creates: "/etc/bash_completion.d/helm"
 
 - name: Добавление Helm-репозиторий external-secrets
-  command: helm repo add external-secrets https://charts.external-secrets.io
+  ansible.builtin.command: helm repo add external-secrets https://charts.external-secrets.io
   args:
     creates: "{{ ansible_env.HOME }}/.cache/helm/repository/external-secrets-index.yaml.j2"
   register: external_secrets_result
 
 - name: Установка чарта external-secrets из репозитория
-  command: |
+  ansible.builtin.command: |
     helm upgrade --install external-secrets \
      external-secrets/external-secrets \
     -n external-secrets \
     --create-namespace \
     --set installCRDs=true
-
 - name: Создать ServiceAccount для ESO
   kubernetes.core.k8s:
     template: "eso_sa.yaml.j2"
