@@ -1,0 +1,32 @@
+stages:
+  - lint
+  - execute
+
+variables:
+  GIT_DEPTH: "0"
+  GIT_STRATEGY: fetch
+
+lint:
+    stage: lint
+    tags:
+      - infra
+    script:
+      - cd ansible && ansible-lint -p
+    rules:
+      - if: $CI_COMMIT_BRANCH == "main"
+        changes: 
+          - ansible/**/*
+
+
+execute:
+    stage: execute
+    tags:
+      - infra
+    script:
+      - cd ansible && ansible-playbook -e "k3s_container_id=$PROXMOX_CONTAINER_ID" ./playbooks/orchestrator.yaml
+    needs:
+     - lint
+    rules:
+      - if: $CI_COMMIT_BRANCH == "main"
+        changes: 
+          - ansible/**/*

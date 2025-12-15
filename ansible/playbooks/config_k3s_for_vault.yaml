@@ -5,5 +5,3 @@
   roles:
     - role: setup_default_packages
     - role: install_eso_kuber
-      vars:
-        kubeconfig: /etc/rancher/k3s/k3s.yaml

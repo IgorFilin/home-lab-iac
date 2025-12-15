@@ -1,0 +1,9 @@
+---
+- name: Создаем нужного пользователя
+  ansible.builtin.user:
+    name: "{{ create_user_name | mandatory }}"
+    create_home: "{{ create_user_is_home_dir | default(false) }}"
+    system: "{{ create_user_is_system | default(false) }}"
+    group: "{{ create_user_group | default(omit) }}"
+    comment: "{{ create_user_comment | default(omit) }}"
+    shell: "{{ create_user_shell | default('/bin/bash') }}"

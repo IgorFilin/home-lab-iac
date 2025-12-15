@@ -1,6 +1,8 @@
 ---
-ansible_user: igor
+ansible_user: gitlab-runner
 ansible_become: true
+
+k3s_container_id: 110
 
 required_config_for_run_k3s_in_host:
   - "lxc.apparmor.profile: unconfined"
@@ -8,4 +10,4 @@ required_config_for_run_k3s_in_host:
   - "lxc.cap.drop:"
   - "lxc.mount.auto: proc:rw sys:rw"
 
-vault_api_url: http://192.168.0.119:8201
+vault_config_api_url: http://192.168.0.119:8201

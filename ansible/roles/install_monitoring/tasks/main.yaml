@@ -1,0 +1,28 @@
+- name: Создание нужных директорий
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755" 
+  loop: "{{ install_monitoring_dirs.values() | list }}"
+
+- name: Перенос docker-compose файла
+  ansible.builtin.copy:
+    src: docker-compose.yaml
+    dest: "{{ install_monitoring_dirs.temp_files }}"
+
+- name: Перенос prometheus конфиг файла
+  ansible.builtin.copy:
+    src: prometheus.yml
+    dest: "{{ install_monitoring_dirs.prometheus_config }}"
+
+- name: Перенос loki конфиг файла
+  ansible.builtin.copy:
+    src: loki.yaml
+    dest: "{{ install_monitoring_dirs.loki_files }}"
+
+- name: Запуск сервисов
+  community.docker.docker_compose_v2:
+    project_src: "{{ install_monitoring_dirs.temp_files }}"
+    state: present

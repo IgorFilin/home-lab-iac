@@ -1,0 +1,6 @@
+- name: Конфигурация прокси сервера
+  hosts: proxy
+
+  roles:
+    - role: prometheus.prometheus.nginx_exporter
+    - role: grafana.grafana.promtail

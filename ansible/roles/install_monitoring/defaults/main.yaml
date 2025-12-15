@@ -1,0 +1,11 @@
+install_monitoring_dirs:
+  grafana_config: /opt/grafana
+  grafana_provisioning: /opt/grafana/provisioning
+  prometheus_config: /opt/prometheus
+  prometheus_data: /opt/prometheus/data
+  temp_files: /tmp/monitoring
+  loki_files: /opt/loki
+  loki_compactor: /opt/loki/compactor
+  loki_logs: /opt/loki/chunks
+  loki_index_cache: /opt/loki/index_cache
+  loki_index: /opt/loki/index

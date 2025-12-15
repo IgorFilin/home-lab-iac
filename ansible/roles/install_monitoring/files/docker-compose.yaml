@@ -1,0 +1,39 @@
+version: '3.9'
+
+services:
+
+  prometheus:
+    image: prom/prometheus:main
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    volumes:
+      - /opt/prometheus:/etc/prometheus
+
+  grafana:
+    image: grafana/grafana-oss:latest-ubuntu
+    container_name: grafana
+    user: root
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - /opt/grafana:/var/lib/grafana
+      - /opt/grafana/provisioning/:/etc/grafana/provisioning/
+    environment:
+       GF_SECURITY_ADMIN_PASSWORD: admin
+  loki:
+    image: grafana/loki:3.5.9-amd64
+    container_name: loki
+    user: root
+    ports:
+      - "3100:3100"
+    command: -config.expand-env=true -config.file=/etc/loki/loki.yaml
+    volumes:
+      - /opt/loki:/opt/loki
+      - /opt/loki/loki.yaml:/etc/loki/loki.yaml:ro

@@ -1,14 +1,14 @@
 ---
-ufw_rules:
+install_k3s_ufw_rules:
   - { port: "6443", proto: "tcp", comment: "API server" }
   - { port: "8472", proto: "udp", comment: "Flannel VXLAN (если используешь фланнел)" }
   - { port: "10250", proto: "tcp", comment: "Kubelet" }
   - { port: "30000:32767", proto: "tcp", comment: "NodePort сервисы" }
-kube_config_ln:
+install_k3s_kube_config_ln:
   - src: /etc/rancher/k3s/k3s.yaml
     dest: ~/.kube/config
-mount_ln:
+install_k3s_mount_ln:
   - src: /dev/console
     dest: /dev/kmsg
-download_k3s_file_path: /tmp/install-k3s.sh
-installed_k3s_file_path: /etc/rancher/k3s
+install_k3s_download_k3s_file_path: /tmp/install-k3s.sh
+install_k3s_container_path: /etc/rancher/k3s

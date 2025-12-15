@@ -1,0 +1,10 @@
+---
+- name: Настройка и конфигурация средства выполнения CICD с тегом docker
+  hosts: docker_runner
+
+  roles:
+    - setup_default_packages
+    - install_docker
+    - role: config_gitlab_runner
+      vars:
+        config_gitlab_runner_executor_env: docker

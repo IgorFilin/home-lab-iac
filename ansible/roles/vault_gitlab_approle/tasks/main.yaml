@@ -1,7 +1,7 @@
 ---
 - name: Включить аутентификацию через appRole
   ansible.builtin.uri:
-    url: "{{ vault_api_url }}/v1/sys/auth/approle"
+    url: "{{ vault_config_api_url }}/v1/sys/auth/approle"
     method: POST
     headers:
       X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
@@ -13,12 +13,12 @@
     body:
       type: approle
       description: Approle auth method
-  register: kuber_auth_data
+  register: vault_gitlab_approle_kuber_auth_data
   run_once: true
 
 - name: Создание auth метода по appRole
   ansible.builtin.uri:
-    url: "{{ vault_api_url }}/v1/auth/approle/role/gitLab-ci"
+    url: "{{ vault_config_api_url }}/v1/auth/approle/role/gitLab-ci"
     method: POST
     headers:
       X-Vault-Token: "{{ lookup('env', 'VAULT_ROOT_TOKEN') }}"
@@ -33,7 +33,7 @@
       token_max_ttl: "15m"
       token_policies: ["eso-policy"]
       period": 0,
-  register: kuber_auth_data
+  register: vault_gitlab_approle_kuber_auth_data
   run_once: true
 
 - name: Инструкция по завершению настройки

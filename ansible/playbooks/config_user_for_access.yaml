@@ -1,0 +1,45 @@
+---
+- name: Конфигурация серверов для доступа под пользователем средства выполнения
+  hosts: all
+
+  roles:
+    - role: create_user
+      vars:
+        create_user_name: "gitlab-runner"
+        create_user_is_home_dir: true
+        create_user_system: false
+        create_user_comment: "Средство выполнения gitLab"
+
+  tasks:
+    - name: Создание нужной директории для sudoers и добавление ansible пользователя в конфиг
+      ansible.builtin.copy:
+        content: |
+          # Ansible manager
+          gitlab-runner ALL=(ALL) NOPASSWD: ALL
+        dest: /etc/sudoers.d/gitlab-runner
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+    - name: Создаём директории .ssh
+      ansible.builtin.file:
+        path: /home/gitlab-runner/.ssh/
+        state: directory
+        owner: gitlab-runner
+        group: gitlab-runner
+        mode: "0755"
+
+    - name: Получить содержимое публичного ключа gitlab-runner (локально)
+      ansible.builtin.command: cat /home/gitlab-runner/.ssh/id_ed25519.pub
+      become: true
+      delegate_to: localhost
+      changed_when: false
+      register: gitlab_runner_pubkey
+
+    - name: Копирование публичного ssh
+      ansible.builtin.copy:
+        content: "{{ gitlab_runner_pubkey.stdout }}"
+        dest: /home/gitlab-runner/.ssh/authorized_keys
+        owner: gitlab-runner
+        group: gitlab-runner
+        mode: "0600"
+      when: ansible_connection != "local"

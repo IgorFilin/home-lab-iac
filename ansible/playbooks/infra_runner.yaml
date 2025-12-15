@@ -1,7 +1,20 @@
+---
 - name: Настройка и конфигурация средства выполнения CICD с тегом infra
-  hosts: runners:infra_runner
+  hosts: infra_runner
 
   roles:
     - setup_default_packages
-    - install_docker
-    - config_gitlab_runner
+    - role: config_gitlab_runner
+      vars:
+        config_gitlab_runner_executor_env: shell
+
+  tasks:
+    - name: Установить ansible-lint
+      ansible.builtin.pip:
+        name: ansible-lint
+        state: present
+
+    - name: Удалить файл bash_logout для корректной работы раннера
+      ansible.builtin.file:
+        path: /home/gitlab-runner/.bash_logout
+        state: absent

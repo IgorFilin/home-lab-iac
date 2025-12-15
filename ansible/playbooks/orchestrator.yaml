@@ -2,4 +2,8 @@
 - import_playbook: config_k3s_for_vault.yaml
 - import_playbook: install_k3s.yaml
 - import_playbook: install_vault.yaml
-- import_playbook: update-dns-conf.yaml
+- import_playbook: update_dns_conf.yaml
+- import_playbook: infra_runner.yaml
+- import_playbook: docker_runner.yaml
+- import_playbook: monitoring_install.yaml
+- import_playbook: config_proxy.yaml
